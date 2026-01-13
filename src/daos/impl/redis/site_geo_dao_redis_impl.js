@@ -114,13 +114,15 @@ const findAll = async () => {
   const siteIds = await client.zrangeAsync(keyGenerator.getSiteGeoKey(), 0, -1);
   const sites = [];
 
+  const pipeline = client.batch();
+
   for (const siteId of siteIds) {
     const siteKey = keyGenerator.getSiteHashKey(siteId);
+    pipeline.hgetall(siteKey);
+  }
 
-    /* eslint-disable no-await-in-loop */
-    const siteHash = await client.hgetallAsync(siteKey);
-    /* eslint-enable */
-
+  const siteHashs = await pipeline.execAsync();
+  for (const siteHash of siteHashs) {
     if (siteHash) {
       // Call remap to remap the flat key/value representation
       // from the Redis hash into the site domain object format.
