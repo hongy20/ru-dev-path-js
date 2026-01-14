@@ -11,7 +11,29 @@ const hitSlidingWindow = async (name, opts) => {
   const client = redis.getClient();
 
   // START Challenge #7
-  return -2;
+  const key = keyGenerator.getKey(
+    `limiter:${opts.interval}:${name}:${opts.maxHits}`
+  );
+  const transaction = client.multi();
+  const timestamp = Date.now();
+  transaction.zadd(key, timestamp, `${timestamp}-${Math.random()}`);
+  transaction.zremrangebyscore(key, "-inf", timestamp - opts.interval);
+  transaction.zcard(key);
+
+  const response = await transaction.execAsync();
+  const hits = parseInt(response[2], 10);
+
+  let hitsRemaining;
+
+  if (hits > opts.maxHits) {
+    // Too many hits.
+    hitsRemaining = -1;
+  } else {
+    // Return number of hits remaining.
+    hitsRemaining = opts.maxHits - hits;
+  }
+
+  return hitsRemaining;
   // END Challenge #7
 };
 
