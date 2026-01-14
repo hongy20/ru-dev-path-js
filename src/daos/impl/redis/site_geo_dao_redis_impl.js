@@ -114,21 +114,25 @@ const findAll = async () => {
   const siteIds = await client.zrangeAsync(keyGenerator.getSiteGeoKey(), 0, -1);
   const sites = [];
 
-  const pipeline = client.batch();
+  // OPTIONAL BONUS CHALLENGE: Optimize with a pipeline.
+  if (siteIds.length > 0) {
+    const pipeline = client.batch();
 
-  for (const siteId of siteIds) {
-    const siteKey = keyGenerator.getSiteHashKey(siteId);
-    pipeline.hgetall(siteKey);
-  }
+    for (const siteId of siteIds) {
+      const siteKey = keyGenerator.getSiteHashKey(siteId);
+      pipeline.hgetall(siteKey);
+    }
 
-  const siteHashs = await pipeline.execAsync();
-  for (const siteHash of siteHashs) {
-    if (siteHash) {
-      // Call remap to remap the flat key/value representation
-      // from the Redis hash into the site domain object format.
-      sites.push(remap(siteHash));
+    const siteHashs = await pipeline.execAsync();
+    for (const siteHash of siteHashs) {
+      if (siteHash) {
+        // Call remap to remap the flat key/value representation
+        // from the Redis hash into the site domain object format.
+        sites.push(remap(siteHash));
+      }
     }
   }
+  // END OPTIONAL BONUS CHALLENGE
 
   return sites;
 };
